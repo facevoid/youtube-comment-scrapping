@@ -17,6 +17,7 @@ import argparse
 from urllib.parse import urlparse, urlencode, parse_qs
 from urllib.request import  urlopen
 import traceback
+import csv
 
 YOUTUBE_COMMENT_URL = 'https://www.googleapis.com/youtube/v3/commentThreads'
 YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
@@ -24,18 +25,25 @@ YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
 
 class YouTubeApi():
 
+    def __init__(self):
+        super().__init__()
+        self.comment_count = 0
+
     def load_comments(self, mat, fp):
         for item in mat["items"]:
             comment = item["snippet"]["topLevelComment"]
             author = comment["snippet"]["authorDisplayName"]
             text = comment["snippet"]["textDisplay"]
-            fp.write(text + '\n')
+            
+            fp.writerow([self.comment_count, text])
+            self.comment_count += 1
             # print("Comment by {}: {}".format(author, text))
             if 'replies' in item.keys():
                 for reply in item['replies']['comments']:
                     rauthor = reply['snippet']['authorDisplayName']
                     rtext = reply["snippet"]["textDisplay"]
-                    fp.write(rtext + '\n')
+                    fp.writerow([self.comment_count, rtext])
+                    self.comment_count += 1
 
                 # print("\n\tReply by {}: {}".format(rauthor, rtext), "\n")
 
@@ -160,14 +168,16 @@ class YouTubeApi():
     
 if __name__ == '__main__':
     y = YouTubeApi()
-    max_result = 5
+    max_result = 20
     with open('api_key.json') as fp:
         api_key = json.load(fp).get('api_key')
     with open('channel_id.json') as fp:
         channels = json.load(fp)
     for channel_name, channel_id  in channels.items():
         video_ids = y.channel_videos(channel_id, max_result, api_key)
-        fp = open('scrapped_comments/' + channel_name + '_comments.txt', 'w')
+        fp = open('scrapped_comments/' + channel_name + '_comments.csv', 'w')
+        writer = csv.writer(fp)
+        writer.writerow(['comment_id', 'comment'])
         for video_id in video_ids:
-            y.get_video_comment(fp, max_result, video_id, api_key)
+            y.get_video_comment(writer, max_result, video_id, api_key)
         fp.close()

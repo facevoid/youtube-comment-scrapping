@@ -160,7 +160,7 @@ class YouTubeApi():
     
 if __name__ == '__main__':
     y = YouTubeApi()
-    max_result = 10000
+    max_result = 5
     with open('api_key.json') as fp:
         api_key = json.load(fp).get('api_key')
     with open('channel_id.json') as fp:
